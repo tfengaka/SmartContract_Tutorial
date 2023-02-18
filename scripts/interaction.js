@@ -383,35 +383,44 @@ const floppyABI = [
 const contractAddress = "0xb35624cc8571204Fffe38C8501E583E432e7F132";
 const myAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const receiverAddress = "0x670383dC81098320E6E615190595BE1F8c7130D2";
-const privateKey = process.env.PRIVATE_KEY;
 
-async function interact() {
-	const web3 = await new Web3(process.env.BSC_TESTNET);
-	const floppyContract = new web3.eth.Contract(floppyABI, contractAddress);
+// Initial Web3
+const web3 = new Web3(process.env.BSC_TESTNET);
+const floppyContract = new web3.eth.Contract(floppyABI, contractAddress);
+web3.eth.accounts.wallet.add(process.env.PRIVATE_KEY);
 
-	// CALL Balance
-	const myBalance = await floppyContract.methods.balanceOf(myAddress).call();
-	console.log("My balance: ", myBalance);
+// CALL METHODS
+async function getBalance(address) {
+	const myBalance = await floppyContract.methods.balanceOf(address).call();
+	console.log(`Balance of ${address}: ${myBalance}`);
+}
 
-	// Transfer
-	await web3.eth.accounts.wallet.add(privateKey);
-	const receiverBalanceBefore = await floppyContract.methods
-		.balanceOf(receiverAddress)
+async function getAllowance(owner, spender) {
+	const allowance = await floppyContract.methods
+		.allowance(owner, spender)
 		.call();
+	console.log(`Allowance of ${owner} to ${spender}: ${allowance}`);
+}
 
+// SEND METHODS
+async function transferToAnotherAccount(to, amount) {
+	const receiverBalanceBefore = await floppyContract.methods
+		.balanceOf(to)
+		.call();
+	console.log("Receiver balance before: ", receiverBalanceBefore);
 	const result = await floppyContract.methods
-		.transfer(receiverAddress, 1000000)
+		.transfer(receiverAddress, amount)
 		.send({
 			from: myAddress,
 			gas: 1000000,
 		});
+	console.log("Transaction: ", result);
 	const receiverBalanceAfter = await floppyContract.methods
 		.balanceOf(receiverAddress)
 		.call();
-
-	console.log("Receiver balance before: ", receiverBalanceBefore);
 	console.log("Receiver balance after: ", receiverBalanceAfter);
-	console.log("Transaction: ", result);
 }
 
-interact();
+getBalance(myAddress);
+getAllowance(myAddress, receiverAddress);
+// transferToAnotherAccount(receiverAddress, 1000000);
